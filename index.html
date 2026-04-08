@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark-neon">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crossbar Array 3D — Resistive Switching Visualizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Three.js r163 via ES Module ImportMap -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three":          "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
+      "three/addons/":  "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ HEADER -->
+<header id="header">
+  <div id="title-block">
+    <span class="title-main">Crossbar Array 3D</span>
+    <span class="title-sub">Resistive Switching Array Visualizer</span>
+  </div>
+
+  <nav id="header-nav">
+    <!-- View presets -->
+    <div class="nav-group">
+      <span class="nav-label">View</span>
+      <button class="hdr-btn sm" data-view="iso">Iso</button>
+      <button class="hdr-btn sm" data-view="front">Front</button>
+      <button class="hdr-btn sm" data-view="side">Side</button>
+      <button class="hdr-btn sm" data-view="top">Top</button>
+    </div>
+
+    <!-- Auto-rotate -->
+    <button class="hdr-btn" id="autorotate-btn" title="Toggle auto-rotation">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6"/><path d="M2.5 12C2.5 6.75 6.75 2.5 12 2.5c3.4 0 6.36 1.7 8.17 4.28"/><path d="M2.5 22v-6h6"/><path d="M21.5 12c0 5.25-4.25 9.5-9.5 9.5-3.4 0-6.36-1.7-8.17-4.28"/></svg>
+      Auto-Rotate
+    </button>
+
+    <!-- Theme dropdown -->
+    <div class="hdr-dropdown" id="dd-theme">
+      <button class="hdr-btn" id="btn-theme">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        Theme
+      </button>
+      <div class="hdr-menu" id="menu-theme">
+        <button data-theme="dark-neon"  class="active">Dark Blue / Neon</button>
+        <button data-theme="pure-black">Pure Black</button>
+        <button data-theme="gradient">Deep Space Gradient</button>
+        <button data-theme="light-gray">Light Gray</button>
+        <button data-theme="white">White / Presentation</button>
+      </div>
+    </div>
+
+    <!-- Export dropdown -->
+    <div class="hdr-dropdown" id="dd-export">
+      <button class="hdr-btn accent" id="btn-export">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </button>
+      <div class="hdr-menu" id="menu-export">
+        <button id="exp-png">PNG — Current View</button>
+        <button id="exp-png-hd">PNG — High-Res 2×</button>
+        <button id="exp-transp">PNG — Transparent BG</button>
+      </div>
+    </div>
+
+    <button class="hdr-btn" id="btn-reset-all" title="Reset everything to defaults">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+      Reset All
+    </button>
+
+    <button class="hdr-btn" id="btn-sidebar-toggle" title="Toggle control panel">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      Panel
+    </button>
+  </nav>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════ SIDEBAR -->
+<aside id="sidebar">
+  <div id="sidebar-inner">
+
+    <!-- ── Array Size ─────────────────────────────────────────── -->
+    <section class="ctrl-sec open" id="sec-array">
+      <button class="sec-hdr">
+        <svg class="sec-ico" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+        Array Size
+        <svg class="sec-arrow" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0l5 6 5-6z"/></svg>
+      </button>
+      <div class="sec-body">
+        <div class="ctrl-row">
+          <label class="ctrl-lbl">Rows<strong id="val-rows" class="ctrl-val">4</strong></label>
+          <input type="range" id="ctrl-rows" min="1" max="16" value="4" step="1" class="slider">
+        </div>
+        <div class="ctrl-row">
+          <label class="ctrl-lbl">Columns<strong id="val-cols" class="ctrl-val">4</strong></label>
+          <input type="range" id="ctrl-cols" min="1" max="16" value="4" step="1" class="slider">
+        </div>
+        <div class="quick-btns">
+          <button class="qbtn" data-r="2"  data-c="2">2×2</button>
+          <button class="qbtn" data-r="4"  data-c="4">4×4</button>
+          <button class="qbtn" data-r="6"  data-c="6">6×6</button>
+          <button class="qbtn" data-r="8"  data-c="8">8×8</button>
+          <button class="qbtn" data-r="12" data-c="12">12×12</button>
+          <button class="qbtn" data-r="16" data-c="16">16×16</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Bar Dimensions ─────────────────────────────────────── -->
+    <section class="ctrl-sec open" id="sec-bars">
+      <button class="sec-hdr">
+        <svg class="sec-ico" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="5" width="14" height="3" rx="1.5"/><rect x="1" y="10" width="14" height="3" rx="1.5"/></svg>
+        Bar Dimensions
+        <svg class="sec-arrow" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0l5 6 5-6z"/></svg>
+      </button>
+      <div class="sec-body">
+        <div class="ctrl-row">
+          <label class="ctrl-lbl">Width<strong id="val-barw" class="ctrl-val">0.35</strong></label>
+          <input type="range" id="ctrl-barw" min="0.05" max="0.95" value="0.35" step="0.01" class="slider">
+        </div>
+        <div class="ctrl-row">
+          <label class="ctrl-lbl">Height<strong id="val-barh" class="ctrl-val">0.10</strong></label>
+          <input type="range" id="ctrl-barh" min="0.03" max="0.50" value="0.10" step="0.01" class="slider">
+        </div>
+        <div class="ctrl-row">
+          <label class="ctrl-lbl">Spacing<strong id="val-spacing" class="ctrl-val">1.00</strong></label>
+          <input type="range" id="ctrl-spacing" min="0.30" max="3.00" value="1.00" step="0.05" class="slider">
+        </div>
+        <div class="ctrl-row">
+          <label class="ctrl-lbl">Overhang<strong id="val-overhang" class="ctrl-val">0.50</strong></label>
+          <input type="range" id="ctrl-overhang" min="0.00" max="2.00" value="0.50" step="0.05" class="slider">
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Switching Layer ────────────────────────────────────── -->
+    <section class="ctrl-sec open" id="sec-switch">
+      <button class="sec-hdr">
+        <svg class="sec-ico" viewBox="0 0 16 16" fill="currentColor"><polygon points="8,1 15,5 15,11 8,15 1,11 1,5"/></svg>
+        Switching Layer
+        <svg class="sec-arrow" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0l5 6 5-6z"/></svg>
+      </button>
+      <div class="sec-body">
+        <div class="ctrl-row align-top">
+          <label class="ctrl-lbl">Shape</label>
+          <div class="radio-grp">
+            <label class="radio-lbl">
+              <input type="radio" name="sw-shape" value="box" checked>
+              <span>Box</span>
+            </label>
+            <label class="radio-lbl">
+              <input type="radio" name="sw-shape" value="cylinder">
+              <span>Cylinder</span>
+            </label>
+          </div>
+        </div>
+        <div class="ctrl-row" id="row-swsize">
+          <label class="ctrl-lbl">Box Size<strong id="val-swsize" class="ctrl-val">0.38</strong></label>
+          <input type="range" id="ctrl-swsize" min="0.05" max="1.00" value="0.38" step="0.01" class="slider">
+        </div>
+        <div class="ctrl-row" id="row-swdiam" style="display:none">
+          <label class="ctrl-lbl">Diameter<strong id="val-swdiam" class="ctrl-val">0.34</strong></label>
+          <input type="range" id="ctrl-swdiam" min="0.05" max="1.00" value="0.34" step="0.01" class="slider">
+        </div>
+        <div class="ctrl-row">
+          <label class="ctrl-lbl">SW Height<strong id="val-swh" class="ctrl-val">0.22</strong></label>
+          <input type="range" id="ctrl-swh" min="0.04" max="1.00" value="0.22" step="0.01" class="slider">
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Stack Layers ───────────────────────────────────────── -->
+    <section class="ctrl-sec" id="sec-layers">
+      <button class="sec-hdr">
+        <svg class="sec-ico" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="3" rx="1"/><rect x="1" y="7" width="14" height="3" rx="1"/><rect x="1" y="12" width="14" height="3" rx="1"/></svg>
+        Stack Layers
+        <svg class="sec-arrow" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0l5 6 5-6z"/></svg>
+      </button>
+      <div class="sec-body">
+        <div class="ctrl-row">
+          <label class="ctrl-lbl">Count<strong id="val-stacks" class="ctrl-val">1</strong></label>
+          <input type="range" id="ctrl-stacks" min="1" max="4" value="1" step="1" class="slider">
+        </div>
+        <div class="ctrl-row">
+          <label class="ctrl-lbl">Separation<strong id="val-stacksep" class="ctrl-val">2.5</strong></label>
+          <input type="range" id="ctrl-stacksep" min="0.50" max="6.00" value="2.50" step="0.10" class="slider">
+        </div>
+        <p class="ctrl-hint">Stack up to 4 crossbar layers vertically for 3D integration demonstrations.</p>
+      </div>
+    </section>
+
+    <!-- ── Colors ─────────────────────────────────────────────── -->
+    <section class="ctrl-sec open" id="sec-colors">
+      <button class="sec-hdr">
+        <svg class="sec-ico" viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="5" r="3"/><circle cx="11" cy="5" r="3"/><circle cx="5" cy="11" r="3"/><circle cx="11" cy="11" r="3"/></svg>
+        Colors
+        <svg class="sec-arrow" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0l5 6 5-6z"/></svg>
+      </button>
+      <div class="sec-body">
+        <div class="color-row">
+          <div class="color-swatch" id="sw-bottom" style="background:#C0C8D8"></div>
+          <span class="color-nm">Bottom Bars (Word Lines)</span>
+          <input type="color" class="color-inp" id="color-bottom" value="#C0C8D8">
+        </div>
+        <div class="color-row">
+          <div class="color-swatch" id="sw-top" style="background:#FFCC44"></div>
+          <span class="color-nm">Top Bars (Bit Lines)</span>
+          <input type="color" class="color-inp" id="color-top" value="#FFCC44">
+        </div>
+        <div class="color-row">
+          <div class="color-swatch" id="sw-switch" style="background:#7C3AED"></div>
+          <span class="color-nm">Switching Layer</span>
+          <input type="color" class="color-inp" id="color-switch" value="#7C3AED">
+        </div>
+        <div class="color-row">
+          <div class="color-swatch" id="sw-substrate" style="background:#4A6070"></div>
+          <span class="color-nm">Substrate</span>
+          <input type="color" class="color-inp" id="color-substrate" value="#4A6070">
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Visibility & Display ───────────────────────────────── -->
+    <section class="ctrl-sec open" id="sec-vis">
+      <button class="sec-hdr">
+        <svg class="sec-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/></svg>
+        Visibility
+        <svg class="sec-arrow" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0l5 6 5-6z"/></svg>
+      </button>
+      <div class="sec-body">
+        <div class="checks-grid">
+          <label class="chk-lbl"><input type="checkbox" id="vis-substrate" checked><span>Substrate</span></label>
+          <label class="chk-lbl"><input type="checkbox" id="vis-labels" checked><span>Labels</span></label>
+          <label class="chk-lbl"><input type="checkbox" id="vis-grid" checked><span>Grid</span></label>
+          <label class="chk-lbl"><input type="checkbox" id="vis-axes"><span>Axes</span></label>
+          <label class="chk-lbl"><input type="checkbox" id="vis-markers"><span>Intersections</span></label>
+          <label class="chk-lbl"><input type="checkbox" id="vis-shadow" checked><span>Shadows</span></label>
+        </div>
+        <div class="ctrl-row" style="margin-top:8px">
+          <label class="ctrl-lbl">Opacity<strong id="val-opacity" class="ctrl-val">1.00</strong></label>
+          <input type="range" id="ctrl-opacity" min="0.10" max="1.00" value="1.00" step="0.05" class="slider">
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Presets ────────────────────────────────────────────── -->
+    <section class="ctrl-sec" id="sec-presets">
+      <button class="sec-hdr">
+        <svg class="sec-ico" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z" opacity=".5"/><rect x="6" y="6" width="4" height="4"/></svg>
+        Presets
+        <svg class="sec-arrow" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0l5 6 5-6z"/></svg>
+      </button>
+      <div class="sec-body">
+        <div class="preset-list">
+          <button class="preset-btn" data-preset="default">Default 4×4</button>
+          <button class="preset-btn" data-preset="dense">Dense 8×8</button>
+          <button class="preset-btn" data-preset="neural">Neural Net 8×4</button>
+          <button class="preset-btn" data-preset="large">Large 16×16</button>
+          <button class="preset-btn" data-preset="stacked">3-Layer Stack</button>
+          <button class="preset-btn" data-preset="cylindrical">Cylindrical Pillars</button>
+          <button class="preset-btn" data-preset="wide">Wide Spacing 4×4</button>
+        </div>
+      </div>
+    </section>
+
+    <div style="height:16px"></div>
+  </div><!-- /sidebar-inner -->
+</aside>
+
+<!-- ═══════════════════════════════════════════════ MOBILE OVERLAY -->
+<div id="mobile-overlay"></div>
+
+<!-- ═══════════════════════════════════════════════════════ CANVAS -->
+<canvas id="canvas"></canvas>
+
+<!-- ═══════════════════════════════════════════════════ LABEL OVERLAY -->
+<div id="labels-overlay" aria-hidden="true"></div>
+
+<!-- ═══════════════════════════════════════════════════════ TOOLTIP -->
+<div id="tooltip" role="tooltip"></div>
+
+<!-- ═══════════════════════════════════════════════════ BOTTOM BAR -->
+<footer id="bottom-bar">
+  <div id="controls-hint">
+    <span>Drag — Rotate</span>
+    <span>Scroll — Zoom</span>
+    <span>Right-Drag — Pan</span>
+  </div>
+  <div id="array-info">
+    <span id="info-txt">4×4 Array · 16 crosspoints</span>
+  </div>
+  <div id="bottom-actions">
+    <button class="bar-btn" id="btn-reset-view">Reset View</button>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════ TOAST -->
+<div id="toast"></div>
+
+<!-- Main script (ES Module) -->
+<script type="module" src="script.js"></script>
+</body>
+</html>
