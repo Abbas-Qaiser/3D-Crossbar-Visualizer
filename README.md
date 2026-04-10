@@ -8,6 +8,16 @@
 
 ---
 
+## Tech Stack
+
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)
+![Three.js](https://img.shields.io/badge/Three.js-000000?style=flat&logo=three.js&logoColor=white)
+![WebGL](https://img.shields.io/badge/WebGL-990000?style=flat&logo=webgl&logoColor=white)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat&logo=css3&logoColor=white)
+
+---
+
 ## About
 
 An interactive 3D visualization of a memristor crossbar array built with **Three.js** and **WebGL**.  
@@ -57,26 +67,6 @@ npx serve .
 ├── script.js      — Three.js scene, geometry builders, controls logic
 └── notes.html     — Development notes and references
 ```
-
----
-
-## Tech Stack
-
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black)
-![Three.js](https://img.shields.io/badge/Three.js-000000?style=flat&logo=three.js&logoColor=white)
-![WebGL](https://img.shields.io/badge/WebGL-990000?style=flat&logo=webgl&logoColor=white)
-![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat&logo=html5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat&logo=css3&logoColor=white)
-
----
-
-## Research Context
-
-This visualizer is part of research on **memristor-constrained neural networks**.  
-The crossbar array represents the hardware architecture where memristor devices  
-(Pt/ZnO/MoO₃/Pt) are arranged at each row-column intersection to act as synaptic weights.
-
-Related project: [Memristor CNN on CIFAR-10](https://github.com/Qaiser-baitham/QAL)
 
 ---
 
