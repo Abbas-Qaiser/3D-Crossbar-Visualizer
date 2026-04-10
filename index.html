@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark-neon">
+<html lang="en" data-theme="dark-lab">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,15 +9,11 @@
         rel="stylesheet" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="style.css">
 
-  <!-- Three.js r163 via ES Module ImportMap -->
-  <script type="importmap">
-  {
-    "imports": {
-      "three":          "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
-      "three/addons/":  "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
-    }
-  }
-  </script>
+  <!-- Three.js r135 — UMD globals (last version with examples/js/ in npm → CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.135.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.135.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.135.0/examples/js/environments/RoomEnvironment.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.135.0/examples/js/geometries/RoundedBoxGeometry.js"></script>
 </head>
 <body>
 
@@ -51,11 +47,12 @@
         Theme
       </button>
       <div class="hdr-menu" id="menu-theme">
-        <button data-theme="dark-neon"  class="active">Dark Blue / Neon</button>
-        <button data-theme="pure-black">Pure Black</button>
-        <button data-theme="gradient">Deep Space Gradient</button>
-        <button data-theme="light-gray">Light Gray</button>
-        <button data-theme="white">White / Presentation</button>
+        <button data-theme="dark-lab"  class="active"><span class="theme-dot" style="background:#1e3a8a"></span>Dark Lab</button>
+        <button data-theme="light-clean"><span class="theme-dot" style="background:#f8fafc"></span>Light Clean</button>
+        <button data-theme="presentation"><span class="theme-dot" style="background:#ffffff"></span>Presentation</button>
+        <button data-theme="high-contrast"><span class="theme-dot" style="background:#000000"></span>High Contrast</button>
+        <button data-theme="scientific-blue"><span class="theme-dot" style="background:#1e1b4b"></span>Scientific Blue</button>
+        <button data-theme="minimal-gray"><span class="theme-dot" style="background:#f3f4f6"></span>Minimal Gray</button>
       </div>
     </div>
 
@@ -63,12 +60,20 @@
     <div class="hdr-dropdown" id="dd-export">
       <button class="hdr-btn accent" id="btn-export">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Export
+        Download
       </button>
       <div class="hdr-menu" id="menu-export">
-        <button id="exp-png">PNG — Current View</button>
-        <button id="exp-png-hd">PNG — High-Res 2×</button>
-        <button id="exp-transp">PNG — Transparent BG</button>
+        <div class="menu-label">PNG Export</div>
+        <button id="exp-png-std">📷 Standard (1×)</button>
+        <button id="exp-png-hd">🖼️ HD (2×)</button>
+        <button id="exp-png-fhd">✨ Full HD (3×)</button>
+        <button id="exp-png-4k">🔷 4K (4×)</button>
+        <button id="exp-png-transp">⬜ Transparent BG</button>
+        <div class="menu-label">JPG Export</div>
+        <button id="exp-jpg-std">📷 JPG Standard</button>
+        <button id="exp-jpg-hd">🖼️ JPG HD (2×)</button>
+        <div class="menu-label">Presentation</div>
+        <button id="exp-ppt">📊 PPT-Friendly (White BG)</button>
       </div>
     </div>
 
@@ -175,26 +180,38 @@
           <label class="ctrl-lbl">SW Height<strong id="val-swh" class="ctrl-val">0.22</strong></label>
           <input type="range" id="ctrl-swh" min="0.04" max="1.00" value="0.22" step="0.01" class="slider">
         </div>
+        <div class="ctrl-row">
+          <label class="ctrl-lbl">Marker Size<strong id="val-mksize" class="ctrl-val">0.07</strong></label>
+          <input type="range" id="ctrl-mksize" min="0.02" max="0.30" value="0.07" step="0.01" class="slider">
+        </div>
+        <div class="ctrl-row">
+          <label class="ctrl-lbl">Substrate Pad<strong id="val-subpad" class="ctrl-val">0.40</strong></label>
+          <input type="range" id="ctrl-subpad" min="0.05" max="2.00" value="0.40" step="0.05" class="slider">
+        </div>
       </div>
     </section>
 
-    <!-- ── Stack Layers ───────────────────────────────────────── -->
-    <section class="ctrl-sec" id="sec-layers">
+    <!-- ── Device Layers (Bilayer / Trilayer) ─────────────────── -->
+    <section class="ctrl-sec open" id="sec-layers">
       <button class="sec-hdr">
         <svg class="sec-ico" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="3" rx="1"/><rect x="1" y="7" width="14" height="3" rx="1"/><rect x="1" y="12" width="14" height="3" rx="1"/></svg>
-        Stack Layers
+        Device Layers
         <svg class="sec-arrow" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0l5 6 5-6z"/></svg>
       </button>
       <div class="sec-body">
         <div class="ctrl-row">
-          <label class="ctrl-lbl">Count<strong id="val-stacks" class="ctrl-val">1</strong></label>
+          <label class="ctrl-lbl">Switching Layers<strong id="val-layers" class="ctrl-val">1</strong></label>
+          <input type="range" id="ctrl-layers" min="1" max="4" value="1" step="1" class="slider">
+        </div>
+        <p class="ctrl-hint">1 = Monolayer · 2 = Bilayer · 3 = Trilayer · 4 = Quad. Bars alternate Z/X direction with switching elements between each pair.</p>
+        <div class="ctrl-row" style="margin-top:6px">
+          <label class="ctrl-lbl">Stacks<strong id="val-stacks" class="ctrl-val">1</strong></label>
           <input type="range" id="ctrl-stacks" min="1" max="4" value="1" step="1" class="slider">
         </div>
         <div class="ctrl-row">
-          <label class="ctrl-lbl">Separation<strong id="val-stacksep" class="ctrl-val">2.5</strong></label>
+          <label class="ctrl-lbl">Stack Gap<strong id="val-stacksep" class="ctrl-val">2.5</strong></label>
           <input type="range" id="ctrl-stacksep" min="0.50" max="6.00" value="2.50" step="0.10" class="slider">
         </div>
-        <p class="ctrl-hint">Stack up to 4 crossbar layers vertically for 3D integration demonstrations.</p>
       </div>
     </section>
 
@@ -218,8 +235,18 @@
         </div>
         <div class="color-row">
           <div class="color-swatch" id="sw-switch" style="background:#7C3AED"></div>
-          <span class="color-nm">Switching Layer</span>
+          <span class="color-nm">Switching Layer 1</span>
           <input type="color" class="color-inp" id="color-switch" value="#7C3AED">
+        </div>
+        <div class="color-row">
+          <div class="color-swatch" id="sw-switch2" style="background:#EC4899"></div>
+          <span class="color-nm">Switching Layer 2</span>
+          <input type="color" class="color-inp" id="color-switch2" value="#EC4899">
+        </div>
+        <div class="color-row">
+          <div class="color-swatch" id="sw-marker" style="background:#F97316"></div>
+          <span class="color-nm">Intersection Marker</span>
+          <input type="color" class="color-inp" id="color-marker" value="#F97316">
         </div>
         <div class="color-row">
           <div class="color-swatch" id="sw-substrate" style="background:#4A6070"></div>
@@ -244,10 +271,17 @@
           <label class="chk-lbl"><input type="checkbox" id="vis-axes"><span>Axes</span></label>
           <label class="chk-lbl"><input type="checkbox" id="vis-markers"><span>Intersections</span></label>
           <label class="chk-lbl"><input type="checkbox" id="vis-shadow" checked><span>Shadows</span></label>
+          <label class="chk-lbl"><input type="checkbox" id="vis-topbars" checked><span>Top Bars</span></label>
+          <label class="chk-lbl"><input type="checkbox" id="vis-bottombars" checked><span>Bottom Bars</span></label>
+          <label class="chk-lbl"><input type="checkbox" id="vis-switchlayer" checked><span>Switch Layer</span></label>
         </div>
         <div class="ctrl-row" style="margin-top:8px">
           <label class="ctrl-lbl">Opacity<strong id="val-opacity" class="ctrl-val">1.00</strong></label>
           <input type="range" id="ctrl-opacity" min="0.10" max="1.00" value="1.00" step="0.05" class="slider">
+        </div>
+        <div class="ctrl-row" id="row-grid-opacity" style="margin-top:4px">
+          <label class="ctrl-lbl">Grid Opacity<strong id="val-gridop" class="ctrl-val">0.60</strong></label>
+          <input type="range" id="ctrl-gridop" min="0.1" max="1.0" value="0.6" step="0.05" class="slider">
         </div>
       </div>
     </section>
@@ -265,7 +299,9 @@
           <button class="preset-btn" data-preset="dense">Dense 8×8</button>
           <button class="preset-btn" data-preset="neural">Neural Net 8×4</button>
           <button class="preset-btn" data-preset="large">Large 16×16</button>
-          <button class="preset-btn" data-preset="stacked">3-Layer Stack</button>
+          <button class="preset-btn" data-preset="bilayer">Bilayer 4×4</button>
+          <button class="preset-btn" data-preset="trilayer">Trilayer 4×4</button>
+          <button class="preset-btn" data-preset="stacked">3-Stack Mono</button>
           <button class="preset-btn" data-preset="cylindrical">Cylindrical Pillars</button>
           <button class="preset-btn" data-preset="wide">Wide Spacing 4×4</button>
         </div>
@@ -276,7 +312,7 @@
   </div><!-- /sidebar-inner -->
 </aside>
 
-<!-- ═══════════════════════════════════════════════ MOBILE OVERLAY -->
+<!-- ═══════════════════════════════════════════════════════ MOBILE OVERLAY -->
 <div id="mobile-overlay"></div>
 
 <!-- ═══════════════════════════════════════════════════════ CANVAS -->
@@ -306,7 +342,7 @@
 <!-- ═══════════════════════════════════════════════════════ TOAST -->
 <div id="toast"></div>
 
-<!-- Main script (ES Module) -->
-<script type="module" src="script.js"></script>
+<!-- Main script — regular script, uses THREE global from UMD above -->
+<script src="script.js"></script>
 </body>
 </html>

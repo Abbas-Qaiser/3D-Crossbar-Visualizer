@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crossbar 3D — Controls Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #0d1117; color: #c9d1d9;
+    padding: 24px; line-height: 1.7;
+    direction: rtl;
+  }
+  h1 { color: #58a6ff; font-size: 22px; margin-bottom: 6px; }
+  .subtitle { color: #8b949e; font-size: 13px; margin-bottom: 28px; }
+  h2 { color: #f0883e; font-size: 15px; margin: 22px 0 10px;
+       border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 13px; }
+  th { background: #161b22; color: #58a6ff; padding: 8px 12px;
+       text-align: right; font-weight: 600; }
+  td { padding: 7px 12px; border-bottom: 1px solid #21262d; vertical-align: top; }
+  tr:nth-child(even) td { background: #0d1117; }
+  tr:nth-child(odd)  td { background: #111418; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600; margin-left: 6px;
+  }
+  .header-badge { background: #1f3a5f; color: #58a6ff; }
+  .sidebar-badge { background: #1f3a1f; color: #3fb950; }
+  .mouse-badge  { background: #3a1f3a; color: #d2a8ff; }
+  .note { background: #161b22; border-left: 3px solid #58a6ff;
+          padding: 10px 14px; margin: 16px 0; border-radius: 4px;
+          font-size: 13px; color: #8b949e; }
+  .tip  { background: #161b22; border-left: 3px solid #3fb950;
+          padding: 10px 14px; margin: 16px 0; border-radius: 4px;
+          font-size: 13px; }
+  code { background: #21262d; color: #e3b341; padding: 1px 5px;
+         border-radius: 3px; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>🔬 Crossbar Array 3D Visualizer — Controls Guide</h1>
+<p class="subtitle">ہر button اور control کا مختصر جائزہ</p>
+
+<!-- ═══════════════════════════ HEADER BUTTONS ═══════════ -->
+<h2>📌 اوپر والے Header Buttons <span class="badge header-badge">Header</span></h2>
+<table>
+  <tr>
+    <th style="width:160px">Button</th>
+    <th>کیا کام کرتا ہے</th>
+  </tr>
+  <tr>
+    <td><strong>Iso</strong></td>
+    <td>Camera کو Isometric (ترچھا) view پر لے جاتا ہے — سب سے اچھا 3D نظارہ</td>
+  </tr>
+  <tr>
+    <td><strong>Front</strong></td>
+    <td>Camera سامنے سے دکھاتا ہے — bottom bars صاف نظر آتے ہیں</td>
+  </tr>
+  <tr>
+    <td><strong>Side</strong></td>
+    <td>Camera ایک طرف سے دکھاتا ہے — top bars کی direction واضح ہوتی ہے</td>
+  </tr>
+  <tr>
+    <td><strong>Top</strong></td>
+    <td>اوپر سے نظارہ — پورا array grid کی طرح نظر آتا ہے</td>
+  </tr>
+  <tr>
+    <td><strong>Auto-Rotate</strong></td>
+    <td>3D scene خود بخود گھومنا شروع/بند کرتا ہے — presentation کے لیے</td>
+  </tr>
+  <tr>
+    <td><strong>Theme ▼</strong></td>
+    <td>5 themes: Dark Blue/Neon · Pure Black · Deep Space · Light Gray · White (presentation)</td>
+  </tr>
+  <tr>
+    <td><strong>Export ▼</strong></td>
+    <td>
+      <strong>PNG — Current View:</strong> screen کا screenshot save کرتا ہے<br>
+      <strong>PNG — High-Res 2×:</strong> double resolution image (presentations کے لیے)<br>
+      <strong>PNG — Transparent BG:</strong> شفاف background والی image (PowerPoint میں use کریں)
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Reset All</strong></td>
+    <td>تمام settings واپس default پر — rows 4×4، سب colors اور sliders reset</td>
+  </tr>
+  <tr>
+    <td><strong>Panel</strong></td>
+    <td>بائیں طرف کا control panel چھپاتا/دکھاتا ہے</td>
+  </tr>
+  <tr>
+    <td><strong>Reset View</strong> (نیچے)</td>
+    <td>Camera واپس Iso position پر — ادھر ادھر pan ہو جائے تو یہ button دباؤ</td>
+  </tr>
+</table>
+
+<!-- ═══════════════════════════ MOUSE CONTROLS ═══════════ -->
+<h2>🖱️ Mouse Controls <span class="badge mouse-badge">Mouse</span></h2>
+<table>
+  <tr><th style="width:160px">Action</th><th>کیا ہوتا ہے</th></tr>
+  <tr><td><strong>Left Click + Drag</strong></td><td>3D scene rotate کرتا ہے</td></tr>
+  <tr><td><strong>Scroll Wheel</strong></td><td>Zoom in / Zoom out</td></tr>
+  <tr><td><strong>Right Click + Drag</strong></td><td>Scene کو pan (کھسکانا) کرتا ہے</td></tr>
+  <tr><td><strong>Hover on object</strong></td><td>Tooltip دکھاتا ہے — bar کا نام، row/column، layer</td></tr>
+</table>
+
+<!-- ═══════════════════════════ SIDEBAR — ARRAY SIZE ═══════════ -->
+<h2>📐 Array Size <span class="badge sidebar-badge">Sidebar</span></h2>
+<table>
+  <tr><th style="width:160px">Control</th><th>کیا کام کرتا ہے</th></tr>
+  <tr>
+    <td><strong>Rows slider</strong></td>
+    <td>اوپر والے bars (Bit Lines) کی تعداد — 1 سے 16 تک</td>
+  </tr>
+  <tr>
+    <td><strong>Columns slider</strong></td>
+    <td>نیچے والے bars (Word Lines) کی تعداد — 1 سے 16 تک</td>
+  </tr>
+  <tr>
+    <td><strong>2×2 / 4×4 ... 16×16</strong></td>
+    <td>Quick preset — ایک click میں array size بدل جاتا ہے</td>
+  </tr>
+</table>
+
+<!-- ═══════════════════════════ BAR DIMENSIONS ═══════════ -->
+<h2>📏 Bar Dimensions <span class="badge sidebar-badge">Sidebar</span></h2>
+<table>
+  <tr><th style="width:160px">Control</th><th>کیا کام کرتا ہے</th></tr>
+  <tr><td><strong>Width</strong></td><td>ہر bar کی چوڑائی — چھوٹی value = پتلے bars</td></tr>
+  <tr><td><strong>Height</strong></td><td>ہر bar کی موٹائی (اونچائی) — electrode thickness</td></tr>
+  <tr><td><strong>Spacing</strong></td><td>bars کے درمیان فاصلہ — بڑی value = زیادہ پھیلا ہوا array</td></tr>
+  <tr><td><strong>Overhang</strong></td><td>bars کا array کے باہر نکلنا — electrode overhang</td></tr>
+</table>
+
+<!-- ═══════════════════════════ SWITCHING LAYER ═══════════ -->
+<h2>⚡ Switching Layer <span class="badge sidebar-badge">Sidebar</span></h2>
+<table>
+  <tr><th style="width:160px">Control</th><th>کیا کام کرتا ہے</th></tr>
+  <tr><td><strong>Box</strong> (radio)</td><td>ہر intersection پر مربع/چوکور switching element بناتا ہے</td></tr>
+  <tr><td><strong>Cylinder</strong> (radio)</td><td>ہر intersection پر گول cylindrical pillar بناتا ہے</td></tr>
+  <tr><td><strong>Box Size</strong></td><td>Box shape کا size (Box select ہو تو نظر آتا ہے)</td></tr>
+  <tr><td><strong>Diameter</strong></td><td>Cylinder کی چوڑائی (Cylinder select ہو تو نظر آتا ہے)</td></tr>
+  <tr><td><strong>SW Height</strong></td><td>Switching element کی اونچائی — bars کے درمیان فاصلہ</td></tr>
+</table>
+
+<!-- ═══════════════════════════ STACK LAYERS ═══════════ -->
+<h2>📚 Stack Layers <span class="badge sidebar-badge">Sidebar</span></h2>
+<table>
+  <tr><th style="width:160px">Control</th><th>کیا کام کرتا ہے</th></tr>
+  <tr><td><strong>Count</strong></td><td>کتنے crossbar layers اوپر نیچے stack کریں — 1 سے 4 تک</td></tr>
+  <tr><td><strong>Separation</strong></td><td>layers کے درمیان عمودی فاصلہ</td></tr>
+</table>
+
+<!-- ═══════════════════════════ COLORS ═══════════ -->
+<h2>🎨 Colors <span class="badge sidebar-badge">Sidebar</span></h2>
+<table>
+  <tr><th style="width:160px">Color</th><th>کیا رنگ بدلتا ہے</th></tr>
+  <tr><td><strong>Bottom Bars</strong></td><td>Word Lines — نیچے والے horizontal electrodes</td></tr>
+  <tr><td><strong>Top Bars</strong></td><td>Bit Lines — اوپر والے عمودی electrodes</td></tr>
+  <tr><td><strong>Switching Layer</strong></td><td>ہر intersection پر موجود active material کا رنگ</td></tr>
+  <tr><td><strong>Substrate</strong></td><td>نیچے کی base plate کا رنگ</td></tr>
+</table>
+
+<!-- ═══════════════════════════ VISIBILITY ═══════════ -->
+<h2>👁️ Visibility <span class="badge sidebar-badge">Sidebar</span></h2>
+<table>
+  <tr><th style="width:160px">Checkbox</th><th>کیا چھپاتا/دکھاتا ہے</th></tr>
+  <tr><td><strong>Substrate</strong></td><td>نیچے کی base plate</td></tr>
+  <tr><td><strong>Labels</strong></td><td>W0, W1... (Word Lines) اور B0, B1... (Bit Lines) labels</td></tr>
+  <tr><td><strong>Grid</strong></td><td>فرش پر grid lines</td></tr>
+  <tr><td><strong>Axes</strong></td><td>X (red) Y (green) Z (blue) محور — orientation دکھاتے ہیں</td></tr>
+  <tr><td><strong>Intersections</strong></td><td>ہر crosspoint پر چھوٹے سفید نشان</td></tr>
+  <tr><td><strong>Shadows</strong></td><td>objects کے سائے</td></tr>
+  <tr><td><strong>Opacity slider</strong></td><td>تمام objects کی transparency — 1.0 = ٹھوس، 0.1 = تقریباً شفاف</td></tr>
+</table>
+
+<!-- ═══════════════════════════ PRESETS ═══════════ -->
+<h2>⚙️ Presets <span class="badge sidebar-badge">Sidebar</span></h2>
+<table>
+  <tr><th style="width:160px">Preset</th><th>کیا لوڈ ہوتا ہے</th></tr>
+  <tr><td><strong>Default 4×4</strong></td><td>معیاری 4×4 array — سب سے عام مثال</td></tr>
+  <tr><td><strong>Dense 8×8</strong></td><td>گھنا 8×8 array — پتلے bars، کم spacing</td></tr>
+  <tr><td><strong>Neural Net 8×4</strong></td><td>8 rows × 4 cols — cylindrical pillars — neural network demonstration</td></tr>
+  <tr><td><strong>Large 16×16</strong></td><td>سب سے بڑا 256 crosspoints والا array</td></tr>
+  <tr><td><strong>3-Layer Stack</strong></td><td>3 crossbar layers اوپر نیچے — 3D integration demo</td></tr>
+  <tr><td><strong>Cylindrical Pillars</strong></td><td>4×4 cylinder shape switching nodes کے ساتھ</td></tr>
+  <tr><td><strong>Wide Spacing 4×4</strong></td><td>زیادہ فاصلے والا array — ہر element صاف نظر آتا ہے</td></tr>
+</table>
+
+<!-- ═══════════════════════════ INFO BAR ═══════════ -->
+<h2>📊 نیچے کی Info Bar</h2>
+<table>
+  <tr><th style="width:160px">چیز</th><th>کیا دکھاتا ہے</th></tr>
+  <tr><td><strong>Array info</strong></td><td>مثلاً <code>4×4 Array · 16 crosspoints</code> — live update ہوتا ہے</td></tr>
+  <tr><td><strong>Controls hint</strong></td><td>Mouse controls کی یاد دہانی</td></tr>
+</table>
+
+<!-- ═══════════════════════════ TIPS ═══════════ -->
+<div class="tip">
+  💡 <strong>Research Presentation Tip:</strong> White theme + Export PNG 2× سب سے اچھا result دیتا ہے۔
+  Axes checkbox on کریں تاکہ X/Y/Z direction واضح ہو۔
+</div>
+
+<div class="note">
+  ⚠️ <strong>Internet ضروری ہے:</strong> پہلی بار کھولتے وقت Three.js CDN سے load ہوتا ہے۔
+  اس کے بعد browser cache کر لیتا ہے اور offline بھی کام کرتا ہے۔
+</div>
+
+<p style="margin-top:24px; color:#8b949e; font-size:12px; text-align:center;">
+  Crossbar Array 3D Visualizer · Resistive Switching Research Tool
+</p>
+</body>
+</html>

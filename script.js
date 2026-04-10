@@ -1,14 +1,12 @@
 // ═══════════════════════════════════════════════════════════════
-//  Crossbar Array 3D Visualizer — script.js v3.0
-//  Three.js r163 · ES Modules
+//  Crossbar Array 3D Visualizer — script.js v4.0
+//  Three.js r135 · UMD globals
 //  MeshPhysicalMaterial · RoomEnvironment IBL · Rounded-bar geometry
 //  InstancedMesh throughout for performance
 // ═══════════════════════════════════════════════════════════════
 
-import * as THREE              from 'three';
-import { OrbitControls }       from 'three/addons/controls/OrbitControls.js';
-import { RoomEnvironment }     from 'three/addons/environments/RoomEnvironment.js';
-import { RoundedBoxGeometry }  from 'three/addons/geometries/RoundedBoxGeometry.js';
+// THREE, OrbitControls, RoomEnvironment, RoundedBoxGeometry
+// are loaded as UMD globals from CDN script tags in index.html
 
 /* ──────────────────────────────────────────────────────────────
    WEBGL CHECK
@@ -39,34 +37,43 @@ const DEFAULTS = {
   barHeight:       0.10,
   spacing:         1.00,
   overhang:        0.50,
-  switchShape:     'box',      // 'box' | 'cylinder'
+  switchShape:     'box',
   switchSize:      0.38,
   switchDiameter:  0.34,
   switchHeight:    0.22,
-  stackCount:      1,
+  layerCount:      1,       // switching layers per crossbar (1=mono, 2=bi, 3=tri)
+  stackCount:      1,       // independent crossbar stacks
   stackSpacing:    2.50,
-  colorBottom:     '#C0C8D8',
-  colorTop:        '#FFCC44',
-  colorSwitch:     '#7C3AED',
-  colorSubstrate:  '#4A6070',
+  substratePad:    0.40,    // how far substrate extends beyond bars
+  markerSize:      0.07,    // intersection marker radius
+  colorBottom:     '#94A3B8',
+  colorTop:        '#F59E0B',
+  colorSwitch:     '#8B5CF6',
+  colorSwitch2:    '#EC4899',  // second switching layer color (bilayer/tri)
+  colorSubstrate:  '#334155',
+  colorMarker:     '#F97316',
   opacity:         1.00,
+  gridOpacity:     0.60,
   showSubstrate:   true,
   showLabels:      true,
   showGrid:        true,
   showAxes:        false,
   showMarkers:     false,
   showShadow:      true,
+  showTopBars:     true,
+  showBottomBars:  true,
+  showSwitchLayer: true,
   autoRotate:      false,
-  theme:           'dark-neon',
+  theme:           'dark-lab',
 };
 
 let P = { ...DEFAULTS };
 
 /* ──────────────────────────────────────────────────────────────
-   THEME DEFINITIONS  (scene lighting + Three.js background)
+   THEME DEFINITIONS (scene lighting + Three.js background)
 ────────────────────────────────────────────────────────────── */
 const THEMES = {
-  'dark-neon': {
+  'dark-lab': {
     sceneBg:    0x07090f,
     fogColor:   0x07090f,
     fogDensity: 0.017,
@@ -74,27 +81,55 @@ const THEMES = {
     gridB:      0x0c1525,
     ambient:    0.22,
     hemiSky:    0x223366,   hemiGnd: 0x050515,  hemiInt: 0.55,
-    key:        2.00,       keyCol:  0xfff8f0,
+    key:        2.40,       keyCol:  0xfff8f0,
     fill:       0x3366ff,   fillInt: 0.55,
     rim:        0x7c3aed,   rimInt:  2.60,
     bounce:     0x1e3a8a,   bounceInt: 1.20,
-    envInt:     0.75,
+    envInt:     0.75,       shadowOp: 0.18,
   },
-  'pure-black': {
+  'light-clean': {
+    sceneBg:    0xf8fafc,
+    fogColor:   0xf8fafc,
+    fogDensity: 0.012,
+    gridA:      0xd1d5db,
+    gridB:      0xe5e7eb,
+    ambient:    0.70,
+    hemiSky:    0xd4e5f7,   hemiGnd: 0xc8d9ee,  hemiInt: 0.80,
+    key:        1.30,       keyCol:  0xffffff,
+    fill:       0x5b9cf5,   fillInt: 0.40,
+    rim:        0x3b82f6,   rimInt:  0.95,
+    bounce:     0xe0f2fe,   bounceInt: 0.60,
+    envInt:     1.25,       shadowOp: 0.06,
+  },
+  'presentation': {
+    sceneBg:    0xffffff,
+    fogColor:   0xffffff,
+    fogDensity: 0.010,
+    gridA:      0xdddddd,
+    gridB:      0xf0f0f0,
+    ambient:    0.80,
+    hemiSky:    0xe8eef5,   hemiGnd: 0xd8e4f0,  hemiInt: 0.85,
+    key:        1.10,       keyCol:  0xffffff,
+    fill:       0x7da3e8,   fillInt: 0.35,
+    rim:        0x4b7bdb,   rimInt:  0.70,
+    bounce:     0xf0f5fd,   bounceInt: 0.50,
+    envInt:     1.50,       shadowOp: 0.04,
+  },
+  'high-contrast': {
     sceneBg:    0x000000,
     fogColor:   0x000000,
-    fogDensity: 0.013,
-    gridA:      0x181818,
-    gridB:      0x080808,
-    ambient:    0.20,
-    hemiSky:    0x113322,   hemiGnd: 0x000000,  hemiInt: 0.45,
-    key:        2.20,       keyCol:  0xffffff,
-    fill:       0x22cc88,   fillInt: 0.45,
-    rim:        0x00aa55,   rimInt:  2.10,
-    bounce:     0x001a0d,   bounceInt: 0.85,
-    envInt:     0.55,
+    fogDensity: 0.008,
+    gridA:      0x1a1a1a,
+    gridB:      0x0d0d0d,
+    ambient:    0.25,
+    hemiSky:    0x00ffff,   hemiGnd: 0x000000,  hemiInt: 0.50,
+    key:        2.50,       keyCol:  0x00ffff,
+    fill:       0x00ff00,   fillInt: 0.50,
+    rim:        0x00ffff,   rimInt:  2.50,
+    bounce:     0x001a1a,   bounceInt: 0.90,
+    envInt:     0.60,       shadowOp: 0.22,
   },
-  'gradient': {
+  'scientific-blue': {
     sceneBg:    null,
     fogColor:   0x0c0a24,
     fogDensity: 0.013,
@@ -106,35 +141,21 @@ const THEMES = {
     fill:       0x8844ff,   fillInt: 0.55,
     rim:        0xa855f7,   rimInt:  3.00,
     bounce:     0x200a44,   bounceInt: 1.00,
-    envInt:     0.90,
+    envInt:     0.90,       shadowOp: 0.16,
   },
-  'light-gray': {
-    sceneBg:    0xe8ecf0,
-    fogColor:   0xe8ecf0,
-    fogDensity: 0.015,
-    gridA:      0xaaaaaa,
-    gridB:      0xcccccc,
-    ambient:    0.65,
-    hemiSky:    0xaabbcc,   hemiGnd: 0x888899,  hemiInt: 0.75,
-    key:        1.20,       keyCol:  0xffffff,
-    fill:       0x88aadd,   fillInt: 0.35,
-    rim:        0x4466aa,   rimInt:  0.85,
-    bounce:     0xbbbbee,   bounceInt: 0.55,
-    envInt:     1.20,
-  },
-  'white': {
-    sceneBg:    0xfafafa,
-    fogColor:   0xfafafa,
-    fogDensity: 0.012,
-    gridA:      0xbbbbbb,
-    gridB:      0xdddddd,
-    ambient:    0.75,
-    hemiSky:    0xddeeff,   hemiGnd: 0xaabbcc,  hemiInt: 0.85,
-    key:        1.00,       keyCol:  0xffffff,
-    fill:       0x99aabb,   fillInt: 0.30,
-    rim:        0x4488cc,   rimInt:  0.65,
-    bounce:     0xddeeff,   bounceInt: 0.45,
-    envInt:     1.50,
+  'minimal-gray': {
+    sceneBg:    0xf3f4f6,
+    fogColor:   0xf3f4f6,
+    fogDensity: 0.014,
+    gridA:      0xcacbce,
+    gridB:      0xe5e7eb,
+    ambient:    0.72,
+    hemiSky:    0xd7dce6,   hemiGnd: 0xcad6e0,  hemiInt: 0.78,
+    key:        1.25,       keyCol:  0xffffff,
+    fill:       0x6b7280,   fillInt: 0.38,
+    rim:        0x4b5563,   rimInt:  0.80,
+    bounce:     0xd1d5db,   bounceInt: 0.55,
+    envInt:     1.15,       shadowOp: 0.05,
   },
 };
 
@@ -155,37 +176,47 @@ const PRESETS = {
   default: {
     rows:4, cols:4, barWidth:0.35, barHeight:0.10, spacing:1.00, overhang:0.50,
     switchShape:'box', switchSize:0.38, switchHeight:0.22, switchDiameter:0.34,
-    stackCount:1, stackSpacing:2.50, opacity:1.0,
+    layerCount:1, stackCount:1, stackSpacing:2.50, opacity:1.0,
   },
   dense: {
     rows:8, cols:8, barWidth:0.20, barHeight:0.07, spacing:0.60, overhang:0.25,
     switchShape:'box', switchSize:0.20, switchHeight:0.15, switchDiameter:0.18,
-    stackCount:1, stackSpacing:2.50, opacity:1.0,
+    layerCount:1, stackCount:1, stackSpacing:2.50, opacity:1.0,
   },
   neural: {
     rows:8, cols:4, barWidth:0.26, barHeight:0.09, spacing:0.80, overhang:0.35,
     switchShape:'cylinder', switchSize:0.28, switchHeight:0.20, switchDiameter:0.24,
-    stackCount:1, stackSpacing:2.50, opacity:1.0,
+    layerCount:1, stackCount:1, stackSpacing:2.50, opacity:1.0,
   },
   large: {
     rows:16, cols:16, barWidth:0.12, barHeight:0.05, spacing:0.42, overhang:0.18,
     switchShape:'box', switchSize:0.12, switchHeight:0.10, switchDiameter:0.10,
-    stackCount:1, stackSpacing:2.50, opacity:1.0,
+    layerCount:1, stackCount:1, stackSpacing:2.50, opacity:1.0,
+  },
+  bilayer: {
+    rows:4, cols:4, barWidth:0.32, barHeight:0.09, spacing:1.00, overhang:0.50,
+    switchShape:'box', switchSize:0.35, switchHeight:0.20, switchDiameter:0.30,
+    layerCount:2, stackCount:1, stackSpacing:2.50, opacity:1.0,
+  },
+  trilayer: {
+    rows:4, cols:4, barWidth:0.30, barHeight:0.08, spacing:1.00, overhang:0.50,
+    switchShape:'cylinder', switchSize:0.30, switchHeight:0.18, switchDiameter:0.26,
+    layerCount:3, stackCount:1, stackSpacing:2.50, opacity:1.0,
   },
   stacked: {
     rows:4, cols:4, barWidth:0.32, barHeight:0.09, spacing:1.00, overhang:0.50,
     switchShape:'box', switchSize:0.35, switchHeight:0.22, switchDiameter:0.30,
-    stackCount:3, stackSpacing:2.80, opacity:0.95,
+    layerCount:1, stackCount:3, stackSpacing:2.80, opacity:0.95,
   },
   cylindrical: {
     rows:4, cols:4, barWidth:0.28, barHeight:0.10, spacing:1.00, overhang:0.50,
     switchShape:'cylinder', switchSize:0.36, switchHeight:0.30, switchDiameter:0.32,
-    stackCount:1, stackSpacing:2.50, opacity:1.0,
+    layerCount:1, stackCount:1, stackSpacing:2.50, opacity:1.0,
   },
   wide: {
     rows:4, cols:4, barWidth:0.40, barHeight:0.12, spacing:1.60, overhang:0.70,
     switchShape:'box', switchSize:0.50, switchHeight:0.28, switchDiameter:0.42,
-    stackCount:1, stackSpacing:3.00, opacity:1.0,
+    layerCount:1, stackCount:1, stackSpacing:3.00, opacity:1.0,
   },
 };
 
@@ -200,24 +231,24 @@ let labelData   = [];
 let labels      = [];
 let buildTimer  = null;
 let toastTimer  = null;
-// Track disposable geometry / material created per build cycle
 let activeGeoms = [];
 let activeMats  = [];
+
+// Mesh visibility tracking
+let bottomBarMeshes = [];
+let topBarMeshes = [];
+let switchMeshes = [];
 
 const labelsOverlay = document.getElementById('labels-overlay');
 const tooltip       = document.getElementById('tooltip');
 const raycaster     = new THREE.Raycaster();
 const mouse         = new THREE.Vector2();
-const _dummy        = new THREE.Object3D();   // reusable for InstancedMesh
+const _dummy        = new THREE.Object3D();
 
 /* ══════════════════════════════════════════════════════════════
    GEOMETRY UTILITIES
 ══════════════════════════════════════════════════════════════ */
 
-/**
- * 2-D rounded-rectangle Shape centred at the origin.
- * width × height in the XY plane, corner radius = r.
- */
 function roundedRect(width, height, r) {
   const cr = Math.min(r, width * 0.49, height * 0.49);
   const hw = width  / 2;
@@ -235,46 +266,35 @@ function roundedRect(width, height, r) {
   return shape;
 }
 
-/**
- * Bar running along the Z-axis.
- * Cross-section: barW × barH (XY), centred at world origin.
- * Corner radius scales with barH for a realistic electrode profile.
- */
 function makeBarGeomZ(barW, barH, length) {
   const cr   = Math.min(0.024, barH * 0.28, barW * 0.14);
   const geom = new THREE.ExtrudeGeometry(roundedRect(barW, barH, cr), {
-    depth:         Math.max(0.02, length),
-    bevelEnabled:  false,
-    curveSegments: 6,
+    depth:          Math.max(0.02, length),
+    bevelEnabled:   true,
+    bevelThickness: 0.004,
+    bevelSize:      0.004,
+    bevelSegments:  2,
+    curveSegments:  12,
   });
-  // ExtrudeGeometry extrudes from Z=0 to Z=depth; centre it:
   geom.translate(0, 0, -length / 2);
   geom.computeVertexNormals();
   return geom;
 }
 
-/**
- * Bar running along the X-axis.
- * Built from a Z-bar then rotated 90° around Y so length → X.
- */
 function makeBarGeomX(barW, barH, length) {
   const geom = makeBarGeomZ(barW, barH, length);
   geom.applyMatrix4(new THREE.Matrix4().makeRotationY(Math.PI / 2));
-  // Normals are correctly transformed by applyMatrix4; no recompute needed.
   return geom;
 }
 
-/**
- * Rounded-box switching-layer pillar, centred at origin, height along Y.
- */
 function makeSwitchBox(size, height) {
   const r = Math.min(0.016, size * 0.14, height * 0.20);
-  return new RoundedBoxGeometry(size, height, size, 2, r);
+  if (typeof THREE.RoundedBoxGeometry !== 'undefined') {
+    return new THREE.RoundedBoxGeometry(size, height, size, 2, r);
+  }
+  return new THREE.BoxGeometry(size, height, size);
 }
 
-/**
- * Cylindrical switching-layer pillar, centred at origin, height along Y.
- */
 function makeSwitchCyl(diameter, height) {
   return new THREE.CylinderGeometry(diameter / 2, diameter / 2, height, 32, 1, false);
 }
@@ -285,142 +305,129 @@ function makeSwitchCyl(diameter, height) {
 function initScene() {
   const canvas = document.getElementById('canvas');
 
-  /* ── Renderer ─────────────────────────────────────────────── */
   renderer = new THREE.WebGLRenderer({
     canvas,
     antialias:             true,
-    preserveDrawingBuffer: true,   // required for PNG export
-    alpha:                 true,   // transparent for gradient theme
+    preserveDrawingBuffer: true,
+    alpha:                 true,
   });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.5));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled       = true;
   renderer.shadowMap.type          = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding          = THREE.sRGBEncoding;
   renderer.toneMapping             = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure     = 1.08;
-  renderer.outputColorSpace        = THREE.SRGBColorSpace;
+  renderer.toneMappingExposure     = 0.95;
 
-  /* ── Scene ────────────────────────────────────────────────── */
+  /* Scene */
   scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x07090f, 0.017);
 
-  /* ── Camera ───────────────────────────────────────────────── */
-  camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 200);
-  camera.position.set(...CAM_PRESETS.iso.pos);
+  /* Camera */
+  const W = window.innerWidth, H = window.innerHeight;
+  camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 500);
+  camera.position.set(9, 7, 10);
+  camera.lookAt(0, 0.5, 0);
 
-  /* ── Orbit Controls ───────────────────────────────────────── */
-  controls = new OrbitControls(camera, canvas);
-  controls.target.set(...CAM_PRESETS.iso.target);
-  controls.enableDamping   = true;
-  controls.dampingFactor   = 0.055;
-  controls.minDistance     = 1;
-  controls.maxDistance     = 90;
-  controls.maxPolarAngle   = Math.PI * 0.90;
-  controls.autoRotate      = false;
-  controls.autoRotateSpeed = 1.0;
+  /* OrbitControls */
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 0.5, 0);
+  controls.enableDamping  = true;
+  controls.dampingFactor  = 0.09;
+  controls.autoRotateSpeed = 1.8;
   controls.update();
 
-  /* ── Environment Map (Room IBL for PBR reflections) ────────── */
-  const pmrem  = new THREE.PMREMGenerator(renderer);
-  const envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environment = envMap;
-  pmrem.dispose();
-
-  /* ── Lights ───────────────────────────────────────────────── */
+  /* Lighting */
   ambientLight = new THREE.AmbientLight(0xffffff, 0.22);
   scene.add(ambientLight);
 
   hemiLight = new THREE.HemisphereLight(0x223366, 0x050515, 0.55);
   scene.add(hemiLight);
 
-  keyLight = new THREE.DirectionalLight(0xfff8f0, 2.00);
-  keyLight.position.set(10, 16, 10);
-  keyLight.castShadow               = true;
-  keyLight.shadow.mapSize.set(2048, 2048);
-  keyLight.shadow.camera.near       =  0.5;
-  keyLight.shadow.camera.far        = 90;
-  keyLight.shadow.camera.left       = -30;
-  keyLight.shadow.camera.right      =  30;
-  keyLight.shadow.camera.top        =  30;
-  keyLight.shadow.camera.bottom     = -30;
-  keyLight.shadow.bias              = -0.0003;
-  keyLight.shadow.normalBias        =  0.025;
+  keyLight = new THREE.DirectionalLight(0xfff8f0, 2.40);
+  keyLight.position.set(8, 12, 10);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.width  = 4096;
+  keyLight.shadow.mapSize.height = 4096;
+  keyLight.shadow.camera.left    = -30;
+  keyLight.shadow.camera.right   = 30;
+  keyLight.shadow.camera.top     = 30;
+  keyLight.shadow.camera.bottom  = -30;
+  keyLight.shadow.camera.near    = 0.5;
+  keyLight.shadow.camera.far     = 100;
+  keyLight.shadow.bias           = -0.0002;
   scene.add(keyLight);
 
   fillLight = new THREE.DirectionalLight(0x3366ff, 0.55);
-  fillLight.position.set(-10, 5, -6);
+  fillLight.position.set(-15, 6, -8);
   scene.add(fillLight);
 
   rimLight = new THREE.DirectionalLight(0x7c3aed, 2.60);
-  rimLight.position.set(-4, 10, -12);
+  rimLight.position.set(-18, 10, 15);
   scene.add(rimLight);
 
   bounceLight = new THREE.DirectionalLight(0x1e3a8a, 1.20);
-  bounceLight.position.set(2, -8, 2);
+  bounceLight.position.set(6, 2, -12);
   scene.add(bounceLight);
 
-  /* ── Shadow receiver plane (invisible, catches floor shadows) */
-  const spGeom = new THREE.PlaneGeometry(60, 60);
-  const spMat  = new THREE.ShadowMaterial({ opacity: 0.18, transparent: true });
-  shadowPlane  = new THREE.Mesh(spGeom, spMat);
-  shadowPlane.rotation.x    = -Math.PI / 2;
-  shadowPlane.position.y    = -0.025;
-  shadowPlane.receiveShadow = true;
-  scene.add(shadowPlane);
+  /* IBL */
+  const pmrem  = new THREE.PMREMGenerator(renderer);
+  const envMap = pmrem.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
+  pmrem.dispose();
+  scene.environment = envMap;
 
-  /* ── Groups / helpers ─────────────────────────────────────── */
+  /* Crossbar group */
   crossbarGroup = new THREE.Group();
   scene.add(crossbarGroup);
 
-  gridHelper = makeGrid();
+  /* Shadow plane — must rotate to lie flat as a floor (PlaneGeometry faces +Z by default) */
+  const spGeom = new THREE.PlaneGeometry(60, 60);
+  const spMat  = new THREE.ShadowMaterial({ opacity: 0.18, transparent: true });
+  shadowPlane  = new THREE.Mesh(spGeom, spMat);
+  shadowPlane.rotation.x   = -Math.PI / 2;
+  shadowPlane.receiveShadow = true;
+  shadowPlane.position.y = -0.14;
+  crossbarGroup.add(shadowPlane);
+
+  /* Grid, axes */
+  gridHelper = new THREE.GridHelper(24, 12, 0x1a2a4a, 0x0c1525);
+  gridHelper.position.y = -0.13;
   gridHelper.visible = P.showGrid;
-  scene.add(gridHelper);
+  crossbarGroup.add(gridHelper);
 
-  axesHelper = new THREE.AxesHelper(4);
+  axesHelper = new THREE.AxesHelper(8);
   axesHelper.visible = P.showAxes;
-  scene.add(axesHelper);
+  crossbarGroup.add(axesHelper);
 
-  /* ── Touch controls ──────────────────────────────────────── */
-  controls.touches = {
-    ONE:  THREE.TOUCH.ROTATE,
-    TWO:  THREE.TOUCH.DOLLY_PAN,
-  };
+  /* Labels overlay */
+  labelsOverlay.style.display = P.showLabels ? '' : 'none';
 
-  /* ── Boot sequence ────────────────────────────────────────── */
-  applyTheme(P.theme);
-  buildScene();
-  syncUI();
-  bindEvents();
-
-  /* ── Mobile: collapse sidebar & update hint text ─────────── */
-  if (window.innerWidth <= 768) {
-    document.getElementById('sidebar')?.classList.add('hidden');
-    document.getElementById('btn-sidebar-toggle')?.classList.remove('active');
-    // Swap hint to touch-friendly wording
+  /* Layout on mobile */
+  function handleMobileLayout() {
     const hint = document.getElementById('controls-hint');
-    if (hint) {
-      hint.innerHTML =
-        '<span>1 Finger — Rotate</span>' +
-        '<span>Pinch — Zoom</span>' +
-        '<span>2 Fingers — Pan</span>';
+    if (window.innerWidth <= 600 && hint) {
+      hint.style.display = 'none';
+    } else if (hint) {
+      hint.style.display = '';
     }
   }
+  handleMobileLayout();
+  window.addEventListener('resize', handleMobileLayout);
 
+  /* Build and render */
+  buildScene();
+  applyTheme(P.theme);   // initialise scene colours / lighting / CSS vars
   animate();
 }
 
 /* ══════════════════════════════════════════════════════════════
-   BUILD SCENE  —  main parametric geometry & instancing pass
+   BUILD SCENE
 ══════════════════════════════════════════════════════════════ */
 function buildScene() {
-  /* Dispose previous cycle's resources */
-  activeGeoms.forEach(g => g.dispose());
-  activeMats.forEach(m  => m.dispose());
-  activeGeoms = [];
-  activeMats  = [];
-  while (crossbarGroup.children.length) crossbarGroup.remove(crossbarGroup.children[0]);
+  bottomBarMeshes = [];
+  topBarMeshes = [];
+  switchMeshes = [];
 
-  /* ── Safe parameter clamping ──────────────────────────────── */
   const rows    = Math.max(1, Math.min(16, Math.round(P.rows)));
   const cols    = Math.max(1, Math.min(16, Math.round(P.cols)));
   const sp      = Math.max(0.25, P.spacing);
@@ -435,180 +442,227 @@ function buildScene() {
   const op      = Math.max(0.08, Math.min(1.0, P.opacity));
   const tr      = op < 0.998;
 
-  /* ── PBR materials ────────────────────────────────────────── */
-  matBottom = new THREE.MeshPhysicalMaterial({
-    color:              new THREE.Color(P.colorBottom),
-    metalness:          0.95,
-    roughness:          0.08,
-    clearcoat:          0.50,
-    clearcoatRoughness: 0.10,
-    envMapIntensity:    1.00,
-    transparent: tr, opacity: op,
-  });
-  matTop = new THREE.MeshPhysicalMaterial({
-    color:              new THREE.Color(P.colorTop),
-    metalness:          0.97,
-    roughness:          0.06,
-    clearcoat:          0.40,
-    clearcoatRoughness: 0.12,
-    envMapIntensity:    1.00,
-    transparent: tr, opacity: op,
-  });
-  matSwitch = new THREE.MeshPhysicalMaterial({
-    color:              new THREE.Color(P.colorSwitch),
-    metalness:          0.12,
-    roughness:          0.38,
-    clearcoat:          0.60,
-    clearcoatRoughness: 0.18,
-    envMapIntensity:    0.80,
-    transparent: tr, opacity: op,
-  });
-  matSubstrate = new THREE.MeshStandardMaterial({
-    color:       new THREE.Color(P.colorSubstrate),
-    metalness:   0.05,
-    roughness:   0.88,
-    transparent: true,
-    opacity:     op * 0.72,
-  });
-  matMarker = new THREE.MeshStandardMaterial({
-    color:             0xffffff,
-    emissive:          new THREE.Color(0xffffff),
-    emissiveIntensity: 0.55,
-    metalness:         0,
-    roughness:         0.20,
-  });
-  activeMats.push(matBottom, matTop, matSwitch, matSubstrate, matMarker);
+  /* Dispose old */
+  activeGeoms.forEach(g => g.dispose());
+  activeMats.forEach(m => m.dispose());
+  activeGeoms = [];
+  activeMats = [];
+  const permanent = new Set([shadowPlane, gridHelper, axesHelper]);
+  for (let i = crossbarGroup.children.length - 1; i >= 0; i--) {
+    const ch = crossbarGroup.children[i];
+    if (permanent.has(ch)) continue;
+    crossbarGroup.remove(ch);
+    if (ch.geometry) ch.geometry.dispose();
+    if (ch.material) ch.material.dispose();
+  }
 
-  /* ── Derived dimensions ───────────────────────────────────── */
+  /* Materials */
+  matBottom = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(P.colorBottom),
+    metalness: 0.92, roughness: 0.12,
+    clearcoat: 0.8, clearcoatRoughness: 0.1,
+    envMapIntensity: 1.2,
+    transparent: tr, opacity: op,
+  });
+  activeMats.push(matBottom);
+
+  matTop = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(P.colorTop),
+    metalness: 0.94, roughness: 0.08,
+    clearcoat: 0.6, clearcoatRoughness: 0.08,
+    envMapIntensity: 1.3,
+    transparent: tr, opacity: op,
+  });
+  activeMats.push(matTop);
+
+  matSwitch = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(P.colorSwitch),
+    metalness: 0.05, roughness: 0.30,
+    clearcoat: 0.9, clearcoatRoughness: 0.15,
+    emissive: new THREE.Color(P.colorSwitch),
+    emissiveIntensity: 0.18,
+    envMapIntensity: 0.9,
+    transparent: tr, opacity: op,
+  });
+  activeMats.push(matSwitch);
+
+  /* Second switch layer material for bilayer/trilayer visual distinction */
+  const matSwitch2 = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(P.colorSwitch2),
+    metalness: 0.05, roughness: 0.30,
+    clearcoat: 0.9, clearcoatRoughness: 0.15,
+    emissive: new THREE.Color(P.colorSwitch2),
+    emissiveIntensity: 0.18,
+    envMapIntensity: 0.9,
+    transparent: tr, opacity: op,
+  });
+  activeMats.push(matSwitch2);
+
+  matSubstrate = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(P.colorSubstrate),
+    metalness: 0.02, roughness: 0.85,
+    transparent: true, opacity: op * 0.65,
+  });
+  activeMats.push(matSubstrate);
+
+  matMarker = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(P.colorMarker),
+    metalness: 0.15, roughness: 0.55,
+    envMapIntensity: 0.3,
+    transparent: tr, opacity: op,
+  });
+  activeMats.push(matMarker);
+
+  /* Geometries */
   const offX      = (cols - 1) * sp / 2;
   const offZ      = (rows - 1) * sp / 2;
-  const bottomLen = (rows - 1) * sp + ovh * 2;   // bar spans along Z
-  const topLen    = (cols - 1) * sp + ovh * 2;   // bar spans along X
-  const unitH     = barH + swH + barH;
+  const bottomLen = (rows - 1) * sp + ovh * 2;
+  const topLen    = (cols - 1) * sp + ovh * 2;
 
-  /* ── Shared geometry objects ──────────────────────────────── */
   const botGeom  = makeBarGeomZ(barW, barH, Math.max(0.04, bottomLen));
   const topGeom  = makeBarGeomX(barW, barH, Math.max(0.04, topLen));
   const swGeom   = P.switchShape === 'cylinder'
-                   ? makeSwitchCyl(swDiam, swH)
-                   : makeSwitchBox(swSize, swH);
-
-  const subW    = (cols - 1) * sp + ovh * 2 + barW + 0.55;
-  const subD    = (rows - 1) * sp + ovh * 2 + barW + 0.55;
+    ? makeSwitchCyl(swDiam, swH)
+    : makeSwitchBox(swSize, swH);
+  const pad     = Math.max(0, P.substratePad);
+  const subW    = (cols - 1) * sp + ovh * 2 + barW + pad;
+  const subD    = (rows - 1) * sp + ovh * 2 + barW + pad;
   const subGeom = new THREE.BoxGeometry(subW, 0.11, subD);
-
-  const mkGeom  = new THREE.SphereGeometry(0.065, 10, 10);
+  const mkSize  = Math.max(0.02, Math.min(0.30, P.markerSize));
+  const mkGeom  = new THREE.SphereGeometry(mkSize, 16, 16);
 
   activeGeoms.push(botGeom, topGeom, swGeom, subGeom, mkGeom);
 
-  /* ── Label collection reset ───────────────────────────────── */
   labelData = [];
 
-  /* ── Per-stack layer construction ────────────────────────── */
+  /* Build stacks — each stack contains layerCount switching layers
+     with (layerCount + 1) electrode bars interleaved:
+     Mono  (1): Bar-Z → Sw → Bar-X
+     Bi    (2): Bar-Z → Sw → Bar-X → Sw → Bar-Z
+     Tri   (3): Bar-Z → Sw → Bar-X → Sw → Bar-Z → Sw → Bar-X
+     Bars alternate Z (even index) and X (odd index) direction. */
+  const layers   = Math.max(1, Math.min(4, Math.round(P.layerCount)));
+  const numBars  = layers + 1;                     // electrodes per stack
+  const unitH    = numBars * barH + layers * swH;  // recalculate for multi-layer
+
   for (let s = 0; s < stacks; s++) {
     const base = s * stackSp;
 
-    // ── Substrate plate ──────────────────────────────────────
+    /* Substrate */
     if (P.showSubstrate) {
       const sub       = new THREE.Mesh(subGeom, matSubstrate);
-      sub.position.set(0, base - 0.055, 0);
+      sub.position.y  = base - 0.055;
+      sub.castShadow  = true;
       sub.receiveShadow = true;
-      sub.userData      = { type: 'substrate', stack: s };
+      sub.userData    = { type: 'substrate', stack: s };
       crossbarGroup.add(sub);
     }
 
-    // ── Bottom bars — word lines (along Z) ───────────────────
-    const bY      = base + barH / 2;
-    const botInst = new THREE.InstancedMesh(botGeom, matBottom, cols);
-    botInst.castShadow    = true;
-    botInst.receiveShadow = true;
-    botInst.userData      = { type: 'bottom-bar', stack: s };
-    for (let c = 0; c < cols; c++) {
-      _dummy.position.set(c * sp - offX, bY, 0);
-      _dummy.rotation.set(0, 0, 0);
-      _dummy.scale.setScalar(1);
-      _dummy.updateMatrix();
-      botInst.setMatrixAt(c, _dummy.matrix);
-    }
-    botInst.instanceMatrix.needsUpdate = true;
-    crossbarGroup.add(botInst);
+    /* Interleaved bars and switch layers */
+    for (let b = 0; b < numBars; b++) {
+      const isZ  = b % 2 === 0;                     // even = Z (Word), odd = X (Bit)
+      const barY = base + b * (barH + swH) + barH / 2;
 
-    // ── Switching layer pillars (one per crosspoint) ─────────
-    const swY    = base + barH + swH / 2;
-    const swInst = new THREE.InstancedMesh(swGeom, matSwitch, rows * cols);
-    swInst.castShadow    = true;
-    swInst.receiveShadow = true;
-    swInst.userData      = { type: 'switch-layer', stack: s, rows, cols };
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        _dummy.position.set(c * sp - offX, swY, r * sp - offZ);
-        _dummy.rotation.set(0, 0, 0);
-        _dummy.scale.setScalar(1);
-        _dummy.updateMatrix();
-        swInst.setMatrixAt(r * cols + c, _dummy.matrix);
+      if (isZ) {
+        /* Z-direction bar (Word Line electrode) */
+        const inst = new THREE.InstancedMesh(botGeom, matBottom, cols);
+        inst.castShadow = true;
+        inst.receiveShadow = true;
+        inst.userData = { type: 'bottom-bar', stack: s, layer: b };
+        for (let c = 0; c < cols; c++) {
+          _dummy.position.set(-offX + c * sp, barY, 0);
+          _dummy.updateMatrix();
+          inst.setMatrixAt(c, _dummy.matrix);
+        }
+        inst.instanceMatrix.needsUpdate = true;
+        inst.visible = P.showBottomBars;
+        crossbarGroup.add(inst);
+        bottomBarMeshes.push(inst);
+      } else {
+        /* X-direction bar (Bit Line electrode) */
+        const inst = new THREE.InstancedMesh(topGeom, matTop, rows);
+        inst.castShadow = true;
+        inst.receiveShadow = true;
+        inst.userData = { type: 'top-bar', stack: s, layer: b };
+        for (let r = 0; r < rows; r++) {
+          _dummy.position.set(0, barY, r * sp - offZ);
+          _dummy.updateMatrix();
+          inst.setMatrixAt(r, _dummy.matrix);
+        }
+        inst.instanceMatrix.needsUpdate = true;
+        inst.visible = P.showTopBars;
+        crossbarGroup.add(inst);
+        topBarMeshes.push(inst);
+      }
+
+      /* Switch layer sits between this bar and the next (skip after last bar) */
+      if (b < layers) {
+        const swY    = base + b * (barH + swH) + barH + swH / 2;
+        const swMat  = b % 2 === 0 ? matSwitch : matSwitch2;  // alternate colors
+        const swInst = new THREE.InstancedMesh(swGeom, swMat, rows * cols);
+        swInst.castShadow = true;
+        swInst.receiveShadow = true;
+        swInst.userData = { type: 'switch-layer', stack: s, layer: b, rows, cols };
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const idx = r * cols + c;
+            _dummy.position.set(c * sp - offX, swY, r * sp - offZ);
+            _dummy.updateMatrix();
+            swInst.setMatrixAt(idx, _dummy.matrix);
+          }
+        }
+        swInst.instanceMatrix.needsUpdate = true;
+        swInst.visible = P.showSwitchLayer;
+        crossbarGroup.add(swInst);
+        switchMeshes.push(swInst);
       }
     }
-    swInst.instanceMatrix.needsUpdate = true;
-    crossbarGroup.add(swInst);
 
-    // ── Top bars — bit lines (along X) ──────────────────────
-    const tY      = base + barH + swH + barH / 2;
-    const topInst = new THREE.InstancedMesh(topGeom, matTop, rows);
-    topInst.castShadow    = true;
-    topInst.receiveShadow = true;
-    topInst.userData      = { type: 'top-bar', stack: s };
-    for (let r = 0; r < rows; r++) {
-      _dummy.position.set(0, tY, r * sp - offZ);
-      _dummy.rotation.set(0, 0, 0);
-      _dummy.scale.setScalar(1);
-      _dummy.updateMatrix();
-      topInst.setMatrixAt(r, _dummy.matrix);
-    }
-    topInst.instanceMatrix.needsUpdate = true;
-    crossbarGroup.add(topInst);
-
-    // ── Intersection markers (optional) ─────────────────────
+    /* Intersection markers on top */
     if (P.showMarkers) {
       const mY    = base + unitH + 0.09;
       const mInst = new THREE.InstancedMesh(mkGeom, matMarker, rows * cols);
+      mInst.castShadow = true;
       mInst.userData = { type: 'marker', stack: s, rows, cols };
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
+          const idx = r * cols + c;
           _dummy.position.set(c * sp - offX, mY, r * sp - offZ);
-          _dummy.rotation.set(0, 0, 0);
-          _dummy.scale.setScalar(1);
           _dummy.updateMatrix();
-          mInst.setMatrixAt(r * cols + c, _dummy.matrix);
+          mInst.setMatrixAt(idx, _dummy.matrix);
         }
       }
       mInst.instanceMatrix.needsUpdate = true;
       crossbarGroup.add(mInst);
     }
 
-    // ── Label positions ─────────────────────────────────────
+    /* Labels — bottom-most Z bar + top-most X bar + layer tag */
     if (P.showLabels) {
-      // Word-line labels: placed at +Z end of each bottom bar
+      const firstBarY = base + barH / 2;
       const wZ = bottomLen / 2 + 0.24;
       for (let c = 0; c < cols; c++) {
         labelData.push({
           text: `W${c}`,
-          pos:  new THREE.Vector3(c * sp - offX, bY + barH * 0.65, wZ),
+          pos:  new THREE.Vector3(c * sp - offX, firstBarY, -wZ),
           type: 'word',
         });
       }
-      // Bit-line labels: placed at +X end of each top bar
+      /* Find topmost X-bar Y position */
+      const lastXIdx = numBars - 1 - (numBars % 2 === 0 ? 0 : 1);
+      const lastXY   = lastXIdx >= 1
+        ? base + lastXIdx * (barH + swH) + barH / 2
+        : base + barH + swH + barH / 2;
       const bX = topLen / 2 + 0.24;
       for (let r = 0; r < rows; r++) {
         labelData.push({
           text: `B${r}`,
-          pos:  new THREE.Vector3(bX, tY, r * sp - offZ),
+          pos:  new THREE.Vector3(bX, lastXY, r * sp - offZ),
           type: 'bit',
         });
       }
-      // Layer label (multi-stack only)
       if (stacks > 1) {
         labelData.push({
-          text: `Layer ${s + 1}`,
+          text: `Stack ${s + 1}`,
           pos:  new THREE.Vector3(-offX - ovh - 0.95, base + unitH / 2, -offZ - ovh - 0.95),
           type: 'layer',
         });
@@ -616,24 +670,34 @@ function buildScene() {
     }
   }
 
-  /* ── Update helpers & info bar ─────────────────────────────── */
   refreshGrid();
 
+  const layerLabel = layers === 1 ? 'Monolayer' : layers === 2 ? 'Bilayer' : layers === 3 ? 'Trilayer' : `${layers}-Layer`;
   document.getElementById('info-txt').textContent =
-    `${rows}×${cols} Array · ${rows * cols * stacks} crosspoints` +
+    `${rows}×${cols} ${layerLabel} · ${rows * cols * layers * stacks} crosspoints` +
     (stacks > 1 ? ` · ${stacks} stacks` : '');
 
   buildLabelDOM();
 }
 
 /* ──────────────────────────────────────────────────────────────
-   MATERIAL UPDATES  (colour / opacity without geometry rebuild)
+   MATERIAL UPDATES (colour without rebuild)
 ────────────────────────────────────────────────────────────── */
 function updateMaterials() {
-  if (matBottom)    matBottom.color.set(P.colorBottom);
-  if (matTop)       matTop.color.set(P.colorTop);
-  if (matSwitch)    matSwitch.color.set(P.colorSwitch);
-  if (matSubstrate) matSubstrate.color.set(P.colorSubstrate);
+  if (matBottom)    { matBottom.color.set(P.colorBottom);       matBottom.needsUpdate = true; }
+  if (matTop)       { matTop.color.set(P.colorTop);             matTop.needsUpdate = true; }
+  if (matSwitch)    { matSwitch.color.set(P.colorSwitch);       matSwitch.emissive.set(P.colorSwitch); matSwitch.needsUpdate = true; }
+  if (matSubstrate) { matSubstrate.color.set(P.colorSubstrate); matSubstrate.needsUpdate = true; }
+  if (matMarker)    { matMarker.color.set(P.colorMarker);       matMarker.needsUpdate = true; }
+  /* Update switch2 materials on all odd-indexed switch meshes */
+  switchMeshes.forEach((m, i) => {
+    if (i % 2 !== 0 && m.material) {
+      m.material.color.set(P.colorSwitch2);
+      m.material.emissive.set(P.colorSwitch2);
+      m.material.needsUpdate = true;
+    }
+  });
+  if (renderer && scene && camera) renderer.render(scene, camera);
 }
 
 function updateOpacity() {
@@ -644,7 +708,7 @@ function updateOpacity() {
     m.opacity = op; m.transparent = tr; m.needsUpdate = true;
   });
   if (matSubstrate) {
-    matSubstrate.opacity     = op * 0.72;
+    matSubstrate.opacity     = op * 0.65;
     matSubstrate.transparent = true;
     matSubstrate.needsUpdate = true;
   }
@@ -654,25 +718,27 @@ function updateOpacity() {
    GRID
 ────────────────────────────────────────────────────────────── */
 function makeGrid() {
-  const th   = THEMES[P.theme] || THEMES['dark-neon'];
+  const th   = THEMES[P.theme] || THEMES['dark-lab'];
   const span = Math.max(P.rows, P.cols) * P.spacing;
   const size = Math.max(22, span * 2 + 14);
   const divs = Math.max(10, Math.round(size * 1.0));
   const g    = new THREE.GridHelper(size, divs, th.gridA, th.gridB);
-  g.position.y = -0.03;
+  g.material.transparent = true;
+  g.material.opacity = P.gridOpacity;
+  g.position.y = -0.13;
   return g;
 }
 
 function refreshGrid() {
-  if (!scene) return;
-  if (gridHelper) scene.remove(gridHelper);
+  if (!crossbarGroup) return;
+  if (gridHelper) crossbarGroup.remove(gridHelper);
   gridHelper = makeGrid();
   gridHelper.visible = P.showGrid;
-  scene.add(gridHelper);
+  crossbarGroup.add(gridHelper);
 }
 
 /* ──────────────────────────────────────────────────────────────
-   LABEL DOM (2-D HTML overlays projected via camera)
+   LABEL DOM
 ────────────────────────────────────────────────────────────── */
 function buildLabelDOM() {
   labelsOverlay.innerHTML = '';
@@ -708,14 +774,13 @@ function updateLabels() {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   TOOLTIP  (pointer hover + raycasting against InstancedMesh)
+   TOOLTIP
 ────────────────────────────────────────────────────────────── */
 function onPointerMove(e) {
   mouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
   mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
   raycaster.setFromCamera(mouse, camera);
-  // intersect direct children (each is an InstancedMesh or Mesh)
   const hits = raycaster.intersectObjects(crossbarGroup.children, false);
 
   if (!hits.length) { tooltip.style.display = 'none'; return; }
@@ -781,18 +846,16 @@ function onPointerMove(e) {
 ────────────────────────────────────────────────────────────── */
 function applyTheme(name) {
   P.theme = name;
-  const th = THEMES[name] || THEMES['dark-neon'];
+  const th = THEMES[name] || THEMES['dark-lab'];
 
   document.documentElement.setAttribute('data-theme', name);
 
-  // Three.js scene background
   scene.background = th.sceneBg != null ? new THREE.Color(th.sceneBg) : null;
   if (scene.fog) {
     scene.fog.color.setHex(th.fogColor);
     scene.fog.density = th.fogDensity;
   }
 
-  // Lights
   ambientLight.intensity         = th.ambient;
   hemiLight.color.setHex(th.hemiSky);
   hemiLight.groundColor.setHex(th.hemiGnd);
@@ -803,22 +866,25 @@ function applyTheme(name) {
   rimLight.color.setHex(th.rim);     rimLight.intensity    = th.rimInt;
   bounceLight.color.setHex(th.bounce); bounceLight.intensity = th.bounceInt;
 
-  // envMapIntensity on existing physical materials
   [matBottom, matTop, matSwitch].forEach(m => {
     if (m) { m.envMapIntensity = th.envInt ?? 1.0; m.needsUpdate = true; }
   });
 
-  // Grid rebuild for new colours
+  /* Adjust shadow plane opacity per theme */
+  if (shadowPlane && shadowPlane.material) {
+    shadowPlane.material.opacity = th.shadowOp ?? 0.18;
+    shadowPlane.material.needsUpdate = true;
+  }
+
   refreshGrid();
 
-  // Theme menu active state
   document.querySelectorAll('#menu-theme button').forEach(b => {
     b.classList.toggle('active', b.dataset.theme === name);
   });
 }
 
 /* ──────────────────────────────────────────────────────────────
-   ANIMATED CAMERA LERP TO PRESET
+   ANIMATED CAMERA LERP
 ────────────────────────────────────────────────────────────── */
 function gotoPreset(name) {
   const preset = CAM_PRESETS[name];
@@ -832,7 +898,7 @@ function gotoPreset(name) {
 
   (function tick() {
     const t    = Math.min((Date.now() - t0) / dur, 1);
-    const ease = 1 - Math.pow(1 - t, 3);   // easeOutCubic
+    const ease = 1 - Math.pow(1 - t, 3);
     camera.position.lerpVectors(startPos, endPos, ease);
     controls.target.lerpVectors(startTarget, endTarget, ease);
     controls.update();
@@ -841,14 +907,22 @@ function gotoPreset(name) {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   EXPORT  (PNG / high-res / transparent)
+   EXPORT
 ────────────────────────────────────────────────────────────── */
-function exportImage(scale, transparent) {
+function exportImage(format, scale, transparent, pptMode) {
   const W = window.innerWidth, H = window.innerHeight;
   const origBg  = scene.background;
   const origFog = scene.fog;
 
-  if (transparent) { scene.background = null; scene.fog = null; }
+  if (transparent) {
+    scene.background = null;
+    scene.fog = null;
+  }
+
+  if (pptMode) {
+    scene.background = new THREE.Color(0xffffff);
+    scene.fog = null;
+  }
 
   if (scale > 1) {
     renderer.setSize(W * scale, H * scale, false);
@@ -857,7 +931,17 @@ function exportImage(scale, transparent) {
   }
 
   renderer.render(scene, camera);
-  const url = renderer.domElement.toDataURL('image/png');
+
+  let url;
+  if (format === 'jpg') {
+    if (!transparent && !pptMode) {
+      scene.background = new THREE.Color(origBg || 0x07090f);
+    }
+    renderer.render(scene, camera);
+    url = renderer.domElement.toDataURL('image/jpeg', 0.93);
+  } else {
+    url = renderer.domElement.toDataURL('image/png');
+  }
 
   if (scale > 1) {
     renderer.setSize(W, H, false);
@@ -871,13 +955,21 @@ function exportImage(scale, transparent) {
 
   const a       = document.createElement('a');
   a.href        = url;
-  a.download    = `crossbar-${P.rows}x${P.cols}${scale > 1 ? '-2x' : ''}${transparent ? '-transparent' : ''}.png`;
+  const res = scale === 1 ? '1x' : scale === 2 ? '2x' : scale === 3 ? '3x' : '4x';
+  const suffix = transparent ? '-transparent' : pptMode ? '-ppt' : '';
+  const ext = format === 'jpg' ? 'jpg' : 'png';
+  a.download    = `crossbar-${P.rows}x${P.cols}-${res}${suffix}.${ext}`;
   a.click();
-  showToast(`Saved ${Math.round(W * scale)}×${Math.round(H * scale)} PNG`);
+
+  const resText = scale === 1 ? `${Math.round(W)}×${Math.round(H)}` :
+                  scale === 2 ? `${Math.round(W*2)}×${Math.round(H*2)}` :
+                  scale === 3 ? `${Math.round(W*3)}×${Math.round(H*3)}` :
+                  `${Math.round(W*4)}×${Math.round(H*4)}`;
+  showToast(`Saved ${resText} ${format.toUpperCase()}`);
 }
 
 /* ──────────────────────────────────────────────────────────────
-   RESET ALL  →  defaults
+   RESET ALL
 ────────────────────────────────────────────────────────────── */
 function resetAll() {
   P = { ...DEFAULTS };
@@ -889,7 +981,7 @@ function resetAll() {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   SYNC UI ← P  (push current params into every control)
+   SYNC UI
 ────────────────────────────────────────────────────────────── */
 function syncUI() {
   const sl = (id, vid, v, d) => {
@@ -907,21 +999,28 @@ function syncUI() {
   sl('ctrl-swsize',   'val-swsize',   P.switchSize,     2);
   sl('ctrl-swdiam',   'val-swdiam',   P.switchDiameter, 2);
   sl('ctrl-swh',      'val-swh',      P.switchHeight,   2);
+  sl('ctrl-layers',   'val-layers',   P.layerCount,     0);
   sl('ctrl-stacks',   'val-stacks',   P.stackCount,     0);
   sl('ctrl-stacksep', 'val-stacksep', P.stackSpacing,   1);
+  sl('ctrl-subpad',   'val-subpad',   P.substratePad,   2);
+  sl('ctrl-mksize',   'val-mksize',   P.markerSize,     2);
   sl('ctrl-opacity',  'val-opacity',  P.opacity,        2);
+  sl('ctrl-gridop',   'val-gridop',   P.gridOpacity,    2);
 
   document.querySelectorAll('input[name="sw-shape"]').forEach(r => {
     r.checked = r.value === P.switchShape;
   });
 
   const ck = (id, v) => { const e = document.getElementById(id); if (e) e.checked = v; };
-  ck('vis-substrate', P.showSubstrate);
-  ck('vis-labels',    P.showLabels);
-  ck('vis-grid',      P.showGrid);
-  ck('vis-axes',      P.showAxes);
-  ck('vis-markers',   P.showMarkers);
-  ck('vis-shadow',    P.showShadow);
+  ck('vis-substrate',   P.showSubstrate);
+  ck('vis-labels',      P.showLabels);
+  ck('vis-grid',        P.showGrid);
+  ck('vis-axes',        P.showAxes);
+  ck('vis-markers',     P.showMarkers);
+  ck('vis-shadow',      P.showShadow);
+  ck('vis-topbars',     P.showTopBars);
+  ck('vis-bottombars',  P.showBottomBars);
+  ck('vis-switchlayer', P.showSwitchLayer);
 
   const cl = (id, sid, v) => {
     const e = document.getElementById(id);  if (e)  e.value            = v;
@@ -930,6 +1029,8 @@ function syncUI() {
   cl('color-bottom',    'sw-bottom',    P.colorBottom);
   cl('color-top',       'sw-top',       P.colorTop);
   cl('color-switch',    'sw-switch',    P.colorSwitch);
+  cl('color-switch2',   'sw-switch2',   P.colorSwitch2);
+  cl('color-marker',    'sw-marker',    P.colorMarker);
   cl('color-substrate', 'sw-substrate', P.colorSubstrate);
 
   toggleSwitchShape();
@@ -937,7 +1038,6 @@ function syncUI() {
   const arBtn = document.getElementById('autorotate-btn');
   if (arBtn) {
     arBtn.classList.toggle('active', P.autoRotate);
-    // Last child is the text node " Auto-Rotate" / " Rotating"
     const txt = arBtn.lastChild;
     if (txt && txt.nodeType === Node.TEXT_NODE) {
       txt.textContent = P.autoRotate ? ' Rotating' : ' Auto-Rotate';
@@ -955,7 +1055,7 @@ function toggleSwitchShape() {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   DEBOUNCED BUILD  (avoids hammering geometry on rapid slider)
+   DEBOUNCED BUILD
 ────────────────────────────────────────────────────────────── */
 function scheduleBuild(delay) {
   clearTimeout(buildTimer);
@@ -967,7 +1067,6 @@ function scheduleBuild(delay) {
 ────────────────────────────────────────────────────────────── */
 function bindEvents() {
 
-  /* Slider helper: wire one slider → P[key], display value, rebuild */
   const onSlider = (id, vid, key, dec, rebuild = true) => {
     const el = document.getElementById(id);
     const ve = document.getElementById(vid);
@@ -988,10 +1087,12 @@ function bindEvents() {
   onSlider('ctrl-swsize',   'val-swsize',   'switchSize',     2);
   onSlider('ctrl-swdiam',   'val-swdiam',   'switchDiameter', 2);
   onSlider('ctrl-swh',      'val-swh',      'switchHeight',   2);
+  onSlider('ctrl-layers',   'val-layers',   'layerCount',     0);
   onSlider('ctrl-stacks',   'val-stacks',   'stackCount',     0);
   onSlider('ctrl-stacksep', 'val-stacksep', 'stackSpacing',   1);
+  onSlider('ctrl-subpad',   'val-subpad',   'substratePad',   2);
+  onSlider('ctrl-mksize',   'val-mksize',   'markerSize',     2);
 
-  /* Opacity — material update only, no full geometry rebuild */
   (() => {
     const el = document.getElementById('ctrl-opacity');
     const ve = document.getElementById('val-opacity');
@@ -1003,7 +1104,17 @@ function bindEvents() {
     });
   })();
 
-  /* Switching shape radios */
+  (() => {
+    const el = document.getElementById('ctrl-gridop');
+    const ve = document.getElementById('val-gridop');
+    if (!el) return;
+    el.addEventListener('input', () => {
+      P.gridOpacity = parseFloat(el.value);
+      if (ve) ve.textContent = P.gridOpacity.toFixed(2);
+      refreshGrid();
+    });
+  })();
+
   document.querySelectorAll('input[name="sw-shape"]').forEach(r => {
     r.addEventListener('change', () => {
       P.switchShape = r.value;
@@ -1012,7 +1123,6 @@ function bindEvents() {
     });
   });
 
-  /* Quick-size preset buttons */
   document.querySelectorAll('.qbtn').forEach(btn => {
     btn.addEventListener('click', () => {
       P.rows = parseInt(btn.dataset.r);
@@ -1025,7 +1135,6 @@ function bindEvents() {
     });
   });
 
-  /* Color pickers */
   const onColor = (id, sid, key) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -1039,9 +1148,10 @@ function bindEvents() {
   onColor('color-bottom',    'sw-bottom',    'colorBottom');
   onColor('color-top',       'sw-top',       'colorTop');
   onColor('color-switch',    'sw-switch',    'colorSwitch');
+  onColor('color-switch2',   'sw-switch2',   'colorSwitch2');
+  onColor('color-marker',    'sw-marker',    'colorMarker');
   onColor('color-substrate', 'sw-substrate', 'colorSubstrate');
 
-  /* Visibility checkboxes */
   const onCheck = (id, key, fn) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -1050,7 +1160,7 @@ function bindEvents() {
   onCheck('vis-substrate', 'showSubstrate', () => scheduleBuild());
   onCheck('vis-markers',   'showMarkers',   () => scheduleBuild());
   onCheck('vis-labels', 'showLabels', v => {
-    labelsOverlay.style.opacity = v ? '1' : '0';
+    labelsOverlay.style.display = v ? '' : 'none';
     if (v) buildLabelDOM();
   });
   onCheck('vis-grid',   'showGrid',   v => { if (gridHelper) gridHelper.visible = v; });
@@ -1059,13 +1169,20 @@ function bindEvents() {
     renderer.shadowMap.enabled = v;
     scene.traverse(o => { if (o.material) o.material.needsUpdate = true; });
   });
+  onCheck('vis-topbars', 'showTopBars', v => {
+    topBarMeshes.forEach(m => { m.visible = v; });
+  });
+  onCheck('vis-bottombars', 'showBottomBars', v => {
+    bottomBarMeshes.forEach(m => { m.visible = v; });
+  });
+  onCheck('vis-switchlayer', 'showSwitchLayer', v => {
+    switchMeshes.forEach(m => { m.visible = v; });
+  });
 
-  /* View-preset buttons */
   document.querySelectorAll('[data-view]').forEach(btn => {
     btn.addEventListener('click', () => gotoPreset(btn.dataset.view));
   });
 
-  /* Auto-rotate */
   const arBtn = document.getElementById('autorotate-btn');
   if (arBtn) {
     arBtn.addEventListener('click', () => {
@@ -1078,7 +1195,6 @@ function bindEvents() {
     });
   }
 
-  /* Theme dropdown */
   const themeBtn  = document.getElementById('btn-theme');
   const themeMenu = document.getElementById('menu-theme');
   const expBtn    = document.getElementById('btn-export');
@@ -1093,33 +1209,35 @@ function bindEvents() {
     b.addEventListener('click', () => { applyTheme(b.dataset.theme); themeMenu.classList.remove('open'); });
   });
 
-  /* Export dropdown */
   expBtn?.addEventListener('click', e => {
     e.stopPropagation();
     expMenu?.classList.toggle('open');
     themeMenu?.classList.remove('open');
   });
-  const bindExport = (id, scale, transp) => {
+
+  const bindExport = (id, format, scale, transp, ppt) => {
     document.getElementById(id)?.addEventListener('click', () => {
       expMenu?.classList.remove('open');
-      exportImage(scale, transp);
+      exportImage(format, scale, transp, ppt);
     });
   };
-  bindExport('exp-png',    1, false);
-  bindExport('exp-png-hd', 2, false);
-  bindExport('exp-transp', 1, true);
+  bindExport('exp-png-std',  'png', 1, false, false);
+  bindExport('exp-png-hd',   'png', 2, false, false);
+  bindExport('exp-png-fhd',  'png', 3, false, false);
+  bindExport('exp-png-4k',   'png', 4, false, false);
+  bindExport('exp-png-transp', 'png', 1, true, false);
+  bindExport('exp-jpg-std',  'jpg', 1, false, false);
+  bindExport('exp-jpg-hd',   'jpg', 2, false, false);
+  bindExport('exp-ppt',      'png', 3, false, true);
 
-  /* Close dropdowns on outside click */
   document.addEventListener('click', () => {
     themeMenu?.classList.remove('open');
     expMenu?.classList.remove('open');
   });
 
-  /* Reset / view */
   document.getElementById('btn-reset-all')?.addEventListener('click', resetAll);
   document.getElementById('btn-reset-view')?.addEventListener('click', () => gotoPreset('iso'));
 
-  /* Sidebar toggle — with mobile overlay support */
   const sidebar       = document.getElementById('sidebar');
   const sideToggle    = document.getElementById('btn-sidebar-toggle');
   const mobileOverlay = document.getElementById('mobile-overlay');
@@ -1145,17 +1263,12 @@ function bindEvents() {
     if (isSidebarOpen()) closeSidebar(); else openSidebar();
   });
 
-  /* Tap backdrop to close sidebar on mobile */
   mobileOverlay?.addEventListener('click', closeSidebar);
 
-  /* Resize: handled below alongside camera update */
-
-  /* Collapsible sections */
   document.querySelectorAll('.sec-hdr').forEach(btn => {
     btn.addEventListener('click', () => btn.closest('.ctrl-sec')?.classList.toggle('open'));
   });
 
-  /* Structure presets */
   document.querySelectorAll('.preset-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const preset = PRESETS[btn.dataset.preset];
@@ -1167,26 +1280,28 @@ function bindEvents() {
     });
   });
 
-  /* Tooltip / raycasting */
   renderer.domElement.addEventListener('pointermove', onPointerMove);
   renderer.domElement.addEventListener('pointerleave', () => { tooltip.style.display = 'none'; });
 
-  /* Resize — camera + renderer + mobile overlay cleanup */
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
+  function onResize() {
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    camera.aspect = W / H;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(W, H);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.5));
 
-    // If screen grew to desktop width, dismiss mobile overlay
     if (!isMobile() && mobileOverlay?.classList.contains('active')) {
       mobileOverlay.classList.remove('active');
       sidebar?.classList.remove('open-mobile');
     }
-  });
+  }
+  window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', () => setTimeout(onResize, 180));
 }
 
 /* ──────────────────────────────────────────────────────────────
-   TOAST NOTIFICATION
+   TOAST
 ────────────────────────────────────────────────────────────── */
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -1202,8 +1317,8 @@ function showToast(msg) {
 ────────────────────────────────────────────────────────────── */
 function animate() {
   requestAnimationFrame(animate);
-  controls.update();           // apply damping
-  updateLabels();              // project HTML labels
+  controls.update();
+  updateLabels();
   renderer.render(scene, camera);
 }
 
@@ -1211,3 +1326,5 @@ function animate() {
    BOOT
 ────────────────────────────────────────────────────────────── */
 initScene();
+bindEvents();
+syncUI();
